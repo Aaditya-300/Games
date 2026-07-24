@@ -1,0 +1,10 @@
+{
+  "name": "uno-game",
+  "private": true,
+  "workspaces": ["server", "client"],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "start": "npm run start --workspace=server",
+    "install:all": "npm install"
+  }
+}
