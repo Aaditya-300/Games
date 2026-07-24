@@ -3,42 +3,144 @@
   height: 105px;
   border-radius: var(--radius-card);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 1.5rem;
   color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
   box-shadow: var(--shadow);
-  border: 3px solid rgba(255,255,255,0.25);
+  border: 3px solid #fff;
   position: relative;
+  overflow: hidden;
   user-select: none;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   cursor: default;
 }
 
-.card-label {
-  font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  opacity: 0.9;
-  margin-top: 2px;
-  text-align: center;
-  line-height: 1.2;
-  padding: 0 4px;
+.card.card-red    { background: #ee3f3f; }
+.card.card-blue   { background: #1f7fe0; }
+.card.card-green  { background: #3aa843; }
+.card.card-yellow { background: #f6c200; }
+.card.card-black  { background: #131313; border-color: #fff; }
+
+/* White oval behind the center symbol, classic UNO look */
+.card-oval {
+  position: absolute;
+  width: 92%;
+  height: 62%;
+  background: #fff;
+  border-radius: 50%;
+  transform: rotate(-22deg);
+  opacity: 0.94;
 }
 
-.card.card-red    { background: linear-gradient(135deg, #e53935, #b71c1c); }
-.card.card-blue   { background: linear-gradient(135deg, #1e88e5, #0d47a1); }
-.card.card-green  { background: linear-gradient(135deg, #43a047, #1b5e20); }
-.card.card-yellow { background: linear-gradient(135deg, #fdd835, #f57f17); color: #333; text-shadow: none; }
-.card.card-wild   { background: linear-gradient(135deg, #7b1fa2, #311b92); }
+.card-center {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-22deg);
+}
+
+.card-number {
+  font-size: 2.1rem;
+  font-weight: 900;
+  color: #131313;
+  line-height: 1;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.15);
+}
+
+.card-custom-symbol {
+  font-size: 1.4rem;
+  color: #131313;
+}
+
+.card-corner {
+  position: absolute;
+  top: 5px;
+  left: 7px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #fff;
+  z-index: 3;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+.card-corner.bottom {
+  top: auto;
+  bottom: 5px;
+  right: 7px;
+  left: auto;
+  transform: rotate(180deg);
+}
+.card-corner-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* Skip / Reverse icons sit above the oval, rotated with it */
+.card-center svg { display: block; }
+
+/* Draw 2 / Draw 4 icon: mini card stack + big plus number */
+.draw-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.draw-icon-label {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #131313;
+  line-height: 1;
+}
+.draw-stack {
+  display: flex;
+}
+.mini-card {
+  width: 11px;
+  height: 16px;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,0.3);
+  margin-left: -4px;
+}
+.mini-card:first-child { margin-left: 0; }
+.mini-plain { background: #cfd2d6; }
+.mini-red { background: #ee3f3f; }
+.mini-blue { background: #1f7fe0; }
+.mini-green { background: #3aa843; }
+.mini-yellow { background: #f6c200; }
+
+/* Wild pinwheel: four colored quadrants forming a circle */
+.pinwheel {
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.9);
+}
+.pinwheel::before,
+.pinwheel::after {
+  content: '';
+}
+.pinwheel {
+  background:
+    conic-gradient(
+      #ee3f3f 0deg 90deg,
+      #1f7fe0 90deg 180deg,
+      #f6c200 180deg 270deg,
+      #3aa843 270deg 360deg
+    );
+}
 
 .card.playable {
   cursor: pointer;
-  border-color: rgba(255,255,255,0.7);
+  border-color: rgba(255,255,255,0.95);
 }
 .card.playable:hover {
   transform: translateY(-12px) scale(1.06);
@@ -46,21 +148,38 @@
 }
 
 .card.card-back {
-  background: linear-gradient(135deg, #1a237e, #311b92);
+  background: #131313;
+  border-color: #fff;
   cursor: default;
 }
-
-.card-corner {
+.card-back-oval {
   position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 0.7rem;
+  width: 78%;
+  height: 130%;
+  background: #ee3f3f;
+  border-radius: 50%;
+  transform: rotate(-22deg);
+}
+.card-back-logo {
+  position: relative;
+  z-index: 2;
+  font-size: 1.05rem;
   font-weight: 900;
+  color: #f6c200;
+  letter-spacing: 0.03em;
+  transform: rotate(-22deg);
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
 }
-.card-corner.bottom {
-  top: auto;
-  bottom: 4px;
-  right: 6px;
-  left: auto;
-  transform: rotate(180deg);
+
+.card.card-small {
+  width: 46px;
+  height: 68px;
+  border-width: 2px;
 }
+.card.card-small .card-number { font-size: 1.3rem; }
+.card.card-small .card-custom-symbol { font-size: 0.95rem; }
+.card.card-small .card-corner { font-size: 0.55rem; top: 3px; left: 4px; }
+.card.card-small .card-corner.bottom { bottom: 3px; right: 4px; }
+.card.card-small .draw-icon-label { font-size: 0.75rem; }
+.card.card-small .mini-card { width: 7px; height: 11px; margin-left: -3px; }
+.card.card-small .card-back-logo { font-size: 0.68rem; }

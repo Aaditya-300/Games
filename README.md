@@ -1,6 +1,14 @@
 # UNO Online
 
-Multiplayer UNO-like card game. Node.js + Socket.io backend, React + Vite frontend.
+Multiplayer party game hub. Node.js + Socket.io backend, React + Vite frontend.
+One lobby/room system powers four games:
+
+- 🃏 **UNO** — classic card game, 2–15 players, plus custom cards (Shield, Peek, Swap Hands, Draw Until Color, Discard Color, Sabotage)
+- 🎲 **Truth or Dare** — spin the wheel, get a Truth or Dare card, 2–20 players
+- ✏️ **Sketch & Draw** — draw the secret word, others guess in chat, 3 rounds, 2–20 players
+- 🧠 **IQ Test** — general knowledge multiple-choice trivia, 20s per question, time-weighted scoring, 2–20 players
+
+All four support bots (fill empty seats, play automatically) and a shared chat sidebar per room.
 
 ## Requirements
 
@@ -28,6 +36,77 @@ npm run dev
 Then open [http://localhost:5173](http://localhost:5173) in your browser.
 
 Health check for the server: `curl http://localhost:3001/health` → `{"ok":true}`.
+
+## Project structure
+
+```
+Games/
+├── package.json          # root workspace (npm workspaces: server, client)
+├── render.yaml            # Render deployment blueprint
+├── server/                # Express + Socket.io backend
+│   ├── package.json
+│   └── src/
+│       ├── index.js       # entrypoint — creates the HTTP/Socket.io server, registers handlers
+│       ├── config.js      # env-driven constants (PORT, timers, player caps, etc.)
+│       ├── roomManager.js # room/player CRUD, public view serializers, idle-room cleanup
+│       ├── chatManager.js # per-room chat history + system messages
+│       ├── reconnect.js   # reconnect-token lookup for socket-drop recovery
+│       ├── botManager.js  # UNO bot AI (turn scheduling, card choice, target picking)
+│       │
+│       ├── gameEngine.js  # UNO: core game state, playCard/drawCard/pass, win detection
+│       ├── cardEffects.js # UNO: applies card effects (skip, reverse, swap, sabotage, ...)
+│       ├── turnManager.js # UNO: turn order / direction advancement
+│       ├── deckBuilder.js # UNO: builds the shuffled deck (standard + custom cards)
+│       ├── validators.js  # UNO: legal-move checking
+│       │
+│       ├── tdCards.js     # Truth or Dare: truth/dare prompt text
+│       ├── skWords.js     # Sketch & Draw: word bank
+│       ├── iqQuestions.js # IQ Test: general-knowledge MCQ bank
+│       │
+│       ├── handlers/      # one file per Socket.io event namespace
+│       │   ├── roomHandlers.js  # room:create/join/leave/kick/add_bot/reconnect
+│       │   ├── chatHandlers.js  # chat:send
+│       │   ├── gameHandlers.js  # game:* — UNO play/draw/pass/color-pick/challenge/...
+│       │   ├── tdHandlers.js    # td:* — Truth or Dare spin/next_turn/end
+│       │   ├── skHandlers.js    # sk:* — Sketch & Draw word-pick/draw/guess/end
+│       │   └── iqHandlers.js    # iq:* — IQ Test start/answer/end
+│       └── utils/         # shuffle, room-code generation, bot-id helpers, timers
+│
+└── client/                 # React + Vite frontend
+    ├── package.json
+    ├── vite.config.js      # dev server + /socket.io proxy to the backend
+    └── src/
+        ├── main.jsx, App.jsx   # entry + route table (react-router-dom)
+        ├── socket.js            # shared Socket.io client instance
+        ├── hooks/
+        │   ├── useSocket.js     # registers all socket.on(...) listeners, drives navigation
+        │   ├── useGame.js       # derived UNO game-state selectors
+        │   └── useTurnTimer.js
+        ├── store/               # zustand stores, one per concern
+        │   ├── roomStore.js     # room/players/myId (shared across all games)
+        │   ├── gameStore.js     # UNO game state + hand
+        │   ├── tdStore.js       # Truth or Dare state
+        │   ├── skStore.js       # Sketch & Draw state
+        │   ├── iqStore.js       # IQ Test state
+        │   ├── chatStore.js
+        │   └── uiStore.js       # modals/toasts
+        ├── pages/               # one lobby + one game page per game type
+        │   ├── LandingPage.jsx  # create/join/spectate + game picker
+        │   ├── LobbyPage.jsx, GamePage.jsx, SpectatorPage.jsx       # UNO
+        │   ├── TDLobbyPage.jsx, TDGamePage.jsx                     # Truth or Dare
+        │   ├── SkLobbyPage.jsx, SkGamePage.jsx                     # Sketch & Draw
+        │   └── IqLobbyPage.jsx, IqGamePage.jsx                     # IQ Test
+        ├── components/
+        │   ├── lobby/   # PlayerList, RoomCode (shared across all lobbies)
+        │   ├── shared/  # Card, Modal, Toast, LeaveButton, Spinner
+        │   ├── chat/    # ChatSidebar, ChatMessage
+        │   ├── game/    # UNO board pieces (GameBoard, PlayerHand, pickers, WinScreen, ...)
+        │   ├── td/      # SpinWheel, TDCard, CardReveal
+        │   └── sk/      # DrawingCanvas, GuessList, WordChoicePicker, Scoreboard
+        └── styles/      # tokens.css (colors/spacing), global.css, card.css, animations.css
+```
+
+**Adding a new game** follows the same shape each time: a `server/src/<x>Handlers.js` registered in `server/src/index.js`, a `client/src/store/<x>Store.js`, an `<X>LobbyPage.jsx` + `<X>GamePage.jsx` pair wired into `App.jsx`'s routes, socket listeners added to `useSocket.js`, and an entry in `LandingPage.jsx`'s `GAMES` list.
 
 ## Production
 

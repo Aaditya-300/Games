@@ -14,3 +14,5 @@ export const CHAT_HISTORY_LIMIT = 200;
 export const UNO_CATCH_WINDOW_MS = 2000;
 export const CHALLENGE_WINDOW_MS = 5000;
 export const PEEK_DURATION_MS = 5000;
+export const IQ_QUESTION_DURATION_MS = 20_000;
+export const IQ_TOTAL_QUESTIONS = 10;

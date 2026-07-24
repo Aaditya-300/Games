@@ -9,6 +9,7 @@ import { registerGameHandlers } from './handlers/gameHandlers.js';
 import { registerChatHandlers } from './handlers/chatHandlers.js';
 import { registerTdHandlers } from './handlers/tdHandlers.js';
 import { registerSkHandlers } from './handlers/skHandlers.js';
+import { registerIqHandlers } from './handlers/iqHandlers.js';
 
 const app = express();
 app.use(cors({ origin: CORS_ORIGINS }));
@@ -28,6 +29,7 @@ io.on('connection', socket => {
   registerChatHandlers(io, socket);
   registerTdHandlers(io, socket);
   registerSkHandlers(io, socket);
+  registerIqHandlers(io, socket);
 });
 
 httpServer.listen(PORT, () => {

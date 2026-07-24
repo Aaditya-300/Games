@@ -9,6 +9,8 @@ import TDLobbyPage from './pages/TDLobbyPage';
 import TDGamePage from './pages/TDGamePage';
 import SkLobbyPage from './pages/SkLobbyPage';
 import SkGamePage from './pages/SkGamePage';
+import IqLobbyPage from './pages/IqLobbyPage';
+import IqGamePage from './pages/IqGamePage';
 import ToastContainer from './components/shared/Toast';
 import './styles/global.css';
 import './styles/animations.css';
@@ -27,6 +29,8 @@ function AppInner() {
         <Route path="/td-game" element={<TDGamePage />} />
         <Route path="/sk-lobby" element={<SkLobbyPage />} />
         <Route path="/sk-game" element={<SkGamePage />} />
+        <Route path="/iq-lobby" element={<IqLobbyPage />} />
+        <Route path="/iq-game" element={<IqGamePage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       <ToastContainer />

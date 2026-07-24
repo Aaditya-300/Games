@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useRoomStore } from '../store/roomStore';
-import { useTdStore } from '../store/tdStore';
+import { useIqStore } from '../store/iqStore';
 import PlayerList from '../components/lobby/PlayerList';
 import RoomCode from '../components/lobby/RoomCode';
 import ChatSidebar from '../components/chat/ChatSidebar';
 import LeaveButton from '../components/shared/LeaveButton';
 import socket from '../socket';
 
-export default function TDLobbyPage() {
+export default function IqLobbyPage() {
   const navigate = useNavigate();
   const room = useRoomStore(s => s.room);
   const myId = useRoomStore(s => s.myId) || socket.id;
@@ -15,10 +15,8 @@ export default function TDLobbyPage() {
   if (!room) return null;
 
   const amHost = room.hostId === myId;
-  const playerCount = room.players.length;
-  const canStart = amHost && playerCount >= 1;
 
-  const startGame = () => socket.emit('td:start');
+  const startGame = () => socket.emit('iq:start');
   const kickPlayer = (id) => socket.emit('room:kick', { targetId: id });
   const addBot = () => socket.emit('room:add_bot');
   const removeBot = (id) => socket.emit('room:remove_bot', { botId: id });
@@ -26,7 +24,7 @@ export default function TDLobbyPage() {
   const leaveRoom = () => {
     socket.emit('room:leave');
     useRoomStore.getState().reset();
-    useTdStore.getState().reset();
+    useIqStore.getState().reset();
     navigate('/');
   };
 
@@ -36,12 +34,11 @@ export default function TDLobbyPage() {
         <div style={{ maxWidth: 540 }}>
           <LeaveButton onClick={leaveRoom} />
 
-          {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-            <span style={{ fontSize: '2rem' }}>🎲</span>
+            <span style={{ fontSize: '2rem' }}>🧠</span>
             <div>
-              <h2 style={{ fontSize: '1.4rem', color: '#fff' }}>Truth or Dare — Lobby</h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Family-friendly party game</p>
+              <h2 style={{ fontSize: '1.4rem', color: '#fff' }}>IQ Test — Lobby</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>General knowledge trivia, beat the clock</p>
             </div>
           </div>
 
@@ -57,18 +54,17 @@ export default function TDLobbyPage() {
             </div>
           )}
 
-          {/* Rules reminder */}
           <div style={{
-            background: 'rgba(253,216,53,0.08)', border: '1px solid rgba(253,216,53,0.2)',
+            background: 'rgba(126,87,194,0.08)', border: '1px solid rgba(126,87,194,0.25)',
             borderRadius: 10, padding: '12px 16px', marginBottom: 20, marginTop: 4,
           }}>
-            <div style={{ fontWeight: 700, marginBottom: 6, color: '#fdd835', fontSize: '0.85rem' }}>📋 How to Play</div>
+            <div style={{ fontWeight: 700, marginBottom: 6, color: '#b39ddb', fontSize: '0.85rem' }}>📋 How to Play</div>
             <ul style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', paddingLeft: 16, lineHeight: 1.8 }}>
-              <li>Each turn, the current player spins the wheel</li>
-              <li>The wheel picks a random player and flips a card</li>
-              <li>The card reveals a funny Truth question or a fun Dare challenge</li>
-              <li>Complete it, then click Done to pass to the next spinner</li>
-              <li>All content is 100% family-friendly — no scoring, pure fun!</li>
+              <li>Everyone answers the same multiple-choice question at once</li>
+              <li>You have 20 seconds per question</li>
+              <li>Faster correct answers earn more points (up to 1000, min 100)</li>
+              <li>Wrong or missed answers earn 0 points</li>
+              <li>10 questions total — highest score wins!</li>
             </ul>
           </div>
 
@@ -84,7 +80,7 @@ export default function TDLobbyPage() {
                   onClick={startGame}
                   style={{ flex: 1, padding: '14px', fontSize: '1.05rem' }}
                 >
-                  🎲 Start Truth or Dare
+                  🧠 Start IQ Test
                 </button>
                 <button
                   onClick={addBot}
@@ -94,7 +90,7 @@ export default function TDLobbyPage() {
                 </button>
               </div>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: 4, textAlign: 'center' }}>
-                Max {room.maxPlayers} players. Spectators can watch but won't spin.
+                Max {room.maxPlayers} players.
               </p>
             </>
           ) : (

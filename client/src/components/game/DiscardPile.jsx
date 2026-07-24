@@ -2,11 +2,11 @@ import Card from '../shared/Card';
 import { useGame } from '../../hooks/useGame';
 
 const COLOR_BG = {
-  red: 'rgba(229,57,53,0.3)',
-  blue: 'rgba(30,136,229,0.3)',
-  green: 'rgba(67,160,71,0.3)',
-  yellow: 'rgba(253,216,53,0.3)',
-  wild: 'rgba(123,31,162,0.3)',
+  red: 'rgba(238,63,63,0.3)',
+  blue: 'rgba(31,127,224,0.3)',
+  green: 'rgba(58,168,67,0.3)',
+  yellow: 'rgba(246,194,0,0.3)',
+  wild: 'rgba(255,255,255,0.12)',
 };
 
 export default function DiscardPile() {

@@ -18,7 +18,7 @@ export function registerGameHandlers(io, socket) {
 
     const player = room.players.get(socket.id);
     if (!player?.isHost) return socket.emit('game:error', { code: 'NOT_HOST', message: 'Only host can start' });
-    if (room.status !== 'waiting') return socket.emit('game:error', { code: 'WRONG_STATUS', message: 'Game already started' });
+    if (room.status === 'playing') return socket.emit('game:error', { code: 'WRONG_STATUS', message: 'Game already started' });
 
     const activePlayers = [...room.players.values()].filter(p => !p.isSpectator);
 

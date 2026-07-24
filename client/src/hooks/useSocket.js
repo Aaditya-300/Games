@@ -7,11 +7,12 @@ import { useChatStore } from '../store/chatStore';
 import { useUiStore } from '../store/uiStore';
 import { useTdStore } from '../store/tdStore';
 import { useSkStore } from '../store/skStore';
+import { useIqStore } from '../store/iqStore';
 
 export function useSocketEvents() {
   const navigate = useNavigate();
   const { setRoom, setReconnectToken, setMyId, setIsSpectator } = useRoomStore();
-  const { setGameState, setHand, setWinner, setPeekData, setTurnTimeout } = useGameStore();
+  const { setGameState, setHand, setWinner, setPeekData, setTurnTimeout, reset: resetGame } = useGameStore();
   const { addMessage, setHistory } = useChatStore();
   const { openColorPicker, openSwapTarget, openDiscardColor, openSabotageTarget, openChallenge, addToast, closeChallenge } = useUiStore();
 
@@ -28,7 +29,9 @@ export function useSocketEvents() {
       localStorage.setItem('reconnectToken', reconnectToken);
       localStorage.setItem('roomCode', room.code);
       if (room.gameType === 'sketch') navigate('/sk-lobby');
-      else navigate(room.gameType === 'truth_dare' ? '/td-lobby' : '/lobby');
+      else if (room.gameType === 'truth_dare') navigate('/td-lobby');
+      else if (room.gameType === 'iq') navigate('/iq-lobby');
+      else navigate('/lobby');
     });
 
     socket.on('room:joined', ({ room, reconnectToken, isSpectator }) => {
@@ -39,6 +42,7 @@ export function useSocketEvents() {
       localStorage.setItem('roomCode', room.code);
       if (room.gameType === 'sketch') navigate('/sk-lobby');
       else if (room.gameType === 'truth_dare') navigate('/td-lobby');
+      else if (room.gameType === 'iq') navigate('/iq-lobby');
       else navigate(isSpectator ? '/spectator' : '/lobby');
     });
 
@@ -52,6 +56,9 @@ export function useSocketEvents() {
         } else if (room.gameType === 'truth_dare') {
           useTdStore.getState().setGameState(gameState);
           navigate('/td-game');
+        } else if (room.gameType === 'iq') {
+          useIqStore.getState().setGameState(gameState);
+          navigate('/iq-game');
         } else {
           setGameState(gameState);
           setHand(gameState.hand || []);
@@ -59,7 +66,9 @@ export function useSocketEvents() {
         }
       } else {
         if (room.gameType === 'sketch') navigate('/sk-lobby');
-        else navigate(room.gameType === 'truth_dare' ? '/td-lobby' : '/lobby');
+        else if (room.gameType === 'truth_dare') navigate('/td-lobby');
+        else if (room.gameType === 'iq') navigate('/iq-lobby');
+        else navigate('/lobby');
       }
     });
 
@@ -74,6 +83,7 @@ export function useSocketEvents() {
 
     // ─── UNO Game events ─────────────────────────────────────────────────────
     socket.on('game:started', ({ gameState }) => {
+      resetGame();
       setGameState(gameState);
       setHand(gameState.hand || []);
       navigate('/game');
@@ -230,6 +240,39 @@ export function useSocketEvents() {
     });
 
     socket.on('sk:error', ({ message }) => addToast(message, 'error'));
+
+    // ─── IQ Test events ───────────────────────────────────────────────────────
+    socket.on('iq:started', ({ gameState }) => {
+      useIqStore.getState().setGameState(gameState);
+      navigate('/iq-game');
+    });
+
+    socket.on('iq:question', (data) => {
+      useIqStore.getState().setQuestion(data);
+    });
+
+    socket.on('iq:answer_locked', ({ optionIndex }) => {
+      useIqStore.getState().setAnswerLocked(optionIndex);
+    });
+
+    socket.on('iq:player_answered', (data) => {
+      useIqStore.getState().setPlayerAnswered(data);
+    });
+
+    socket.on('iq:reveal', (data) => {
+      useIqStore.getState().setReveal(data);
+    });
+
+    socket.on('iq:game_over', (data) => {
+      useIqStore.getState().setGameOver(data);
+    });
+
+    socket.on('iq:ended', () => {
+      useIqStore.getState().reset();
+      navigate('/iq-lobby');
+    });
+
+    socket.on('iq:error', ({ message }) => addToast(message, 'error'));
 
     // ─── Chat events ─────────────────────────────────────────────────────────
     socket.on('chat:message', ({ message }) => addMessage(message));

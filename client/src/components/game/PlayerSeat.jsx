@@ -15,7 +15,7 @@ export default function PlayerSeat({ player, isCurrentTurn, isMe, cardCount }) {
           <div key={i} style={{
             position: 'absolute', top: i * 2, left: i * 2,
             width: 28, height: 40, borderRadius: 4,
-            background: 'linear-gradient(135deg, #1a237e, #311b92)',
+            background: '#131313',
             border: '1px solid rgba(255,255,255,0.15)',
           }} />
         ))}

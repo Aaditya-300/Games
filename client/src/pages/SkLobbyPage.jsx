@@ -1,10 +1,14 @@
+import { useNavigate } from 'react-router-dom';
 import { useRoomStore } from '../store/roomStore';
+import { useSkStore } from '../store/skStore';
 import PlayerList from '../components/lobby/PlayerList';
 import RoomCode from '../components/lobby/RoomCode';
 import ChatSidebar from '../components/chat/ChatSidebar';
+import LeaveButton from '../components/shared/LeaveButton';
 import socket from '../socket';
 
 export default function SkLobbyPage() {
+  const navigate = useNavigate();
   const room = useRoomStore(s => s.room);
   const myId = useRoomStore(s => s.myId) || socket.id;
 
@@ -19,10 +23,19 @@ export default function SkLobbyPage() {
   const addBot = () => socket.emit('room:add_bot');
   const removeBot = (id) => socket.emit('room:remove_bot', { botId: id });
 
+  const leaveRoom = () => {
+    socket.emit('room:leave');
+    useRoomStore.getState().reset();
+    useSkStore.getState().reset();
+    navigate('/');
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
       <div style={{ flex: 1, padding: 32, overflowY: 'auto' }}>
         <div style={{ maxWidth: 540 }}>
+          <LeaveButton onClick={leaveRoom} />
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
             <span style={{ fontSize: '2rem' }}>✏️</span>
             <div>

@@ -1,11 +1,14 @@
+import { useNavigate } from 'react-router-dom';
 import { useRoomStore } from '../store/roomStore';
 import { useGameStore } from '../store/gameStore';
 import PlayerList from '../components/lobby/PlayerList';
 import RoomCode from '../components/lobby/RoomCode';
 import ChatSidebar from '../components/chat/ChatSidebar';
+import LeaveButton from '../components/shared/LeaveButton';
 import socket from '../socket';
 
 export default function LobbyPage() {
+  const navigate = useNavigate();
   const room = useRoomStore(s => s.room);
   const myId = useRoomStore(s => s.myId) || socket.id;
   const gameState = useGameStore(s => s.gameState);
@@ -21,11 +24,20 @@ export default function LobbyPage() {
   const addBot = () => socket.emit('room:add_bot');
   const removeBot = (id) => socket.emit('room:remove_bot', { botId: id });
 
+  const leaveRoom = () => {
+    socket.emit('room:leave');
+    useRoomStore.getState().reset();
+    useGameStore.getState().reset();
+    navigate('/');
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
       {/* Main area */}
       <div style={{ flex: 1, padding: 32, overflowY: 'auto' }}>
         <div style={{ maxWidth: 540 }}>
+          <LeaveButton onClick={leaveRoom} />
+
           <h2 style={{ fontSize: '1.4rem', marginBottom: 4, color: '#fff' }}>Game Lobby</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: '0.9rem' }}>
             Share the room code with friends

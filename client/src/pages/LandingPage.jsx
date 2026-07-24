@@ -6,6 +6,7 @@ const GAMES = [
   { id: 'uno', emoji: '🃏', title: 'UNO', desc: 'Classic card game, 2–15 players' },
   { id: 'truth_dare', emoji: '🎲', title: 'Truth or Dare', desc: 'Party fun, spin the wheel, 2–20 players' },
   { id: 'sketch', emoji: '✏️', title: 'Sketch & Draw', desc: 'Draw it, guess it, 2–20 players' },
+  { id: 'iq', emoji: '🧠', title: 'IQ Test', desc: 'General knowledge MCQ, beat the clock, 2–20 players' },
 ];
 
 export default function LandingPage() {
@@ -69,7 +70,7 @@ export default function LandingPage() {
               <label style={{ display: 'block', marginBottom: 8, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                 Choose a Game
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {GAMES.map(g => (
                   <button
                     key={g.id}
@@ -161,7 +162,7 @@ export default function LandingPage() {
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px', fontSize: '1rem' }}>
             {tab === 'create'
-              ? `🎮 Create ${gameType === 'truth_dare' ? 'Truth or Dare' : gameType === 'sketch' ? 'Sketch & Draw' : 'UNO'} Room`
+              ? `🎮 Create ${gameType === 'truth_dare' ? 'Truth or Dare' : gameType === 'sketch' ? 'Sketch & Draw' : gameType === 'iq' ? 'IQ Test' : 'UNO'} Room`
               : tab === 'join' ? '🚪 Join Room' : '👁 Watch as Spectator'}
           </button>
         </form>

@@ -134,6 +134,8 @@ export function playCard(room, playerId, cardId, chosenColor) {
         : effectResult.needsSabotageTarget ? 'sabotage_target'
         : 'color_pick';
     }
+  } else if (effectResult.needsSabotageTarget) {
+    gs.phase = 'sabotage_target';
   }
 
   // Check win condition
