@@ -63,7 +63,7 @@ export default function LobbyPage() {
                   </button>
                 </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: 4, textAlign: 'center' }}>
-                  Max 10 players. Add bots to fill empty spots.
+                  Max {room.maxPlayers} players. Add bots to fill empty spots.
                 </p>
               </>
             ) : (

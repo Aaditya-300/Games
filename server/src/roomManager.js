@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { generateRoomCode } from './utils/roomCode.js';
-import { MAX_PLAYERS, CHAT_HISTORY_LIMIT, ROOM_IDLE_TIMEOUT_MS, ROOM_CLEANUP_INTERVAL_MS } from './config.js';
+import { MAX_PLAYERS, MAX_PLAYERS_UNO, CHAT_HISTORY_LIMIT, ROOM_IDLE_TIMEOUT_MS, ROOM_CLEANUP_INTERVAL_MS } from './config.js';
 
 const rooms = new Map();
 
@@ -29,7 +29,7 @@ export async function createRoom(nickname, password, gameType = 'uno') {
     chatHistory: [],
     createdAt: Date.now(),
     lastActivityAt: Date.now(),
-    maxPlayers: MAX_PLAYERS,
+    maxPlayers: gameType === 'uno' ? MAX_PLAYERS_UNO : MAX_PLAYERS,
     currentTimer: null,
     unoTimer: null,
     challengeTimer: null,

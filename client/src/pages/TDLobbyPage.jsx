@@ -81,7 +81,7 @@ export default function TDLobbyPage() {
                 </button>
               </div>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: 4, textAlign: 'center' }}>
-                Max 10 players. Spectators can watch but won't spin.
+                Max {room.maxPlayers} players. Spectators can watch but won't spin.
               </p>
             </>
           ) : (

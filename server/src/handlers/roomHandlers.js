@@ -6,7 +6,6 @@ import { registerToken, lookupToken, updateTokenSocket } from '../reconnect.js';
 import { systemMessage } from '../chatManager.js';
 import { getPlayerGameView, getPublicGameView } from '../roomManager.js';
 import { getCurrentPlayerId } from '../turnManager.js';
-import { MAX_PLAYERS } from '../config.js';
 import { addBot, removeBot, getBotIds } from '../botManager.js';
 
 export function registerRoomHandlers(io, socket) {

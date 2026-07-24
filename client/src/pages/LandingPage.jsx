@@ -3,9 +3,9 @@ import socket from '../socket';
 import '../styles/animations.css';
 
 const GAMES = [
-  { id: 'uno', emoji: '🃏', title: 'UNO', desc: 'Classic card game, 2–10 players' },
-  { id: 'truth_dare', emoji: '🎲', title: 'Truth or Dare', desc: 'Party fun, spin the wheel, 2–10 players' },
-  { id: 'sketch', emoji: '✏️', title: 'Sketch & Draw', desc: 'Draw it, guess it, 2–10 players' },
+  { id: 'uno', emoji: '🃏', title: 'UNO', desc: 'Classic card game, 2–15 players' },
+  { id: 'truth_dare', emoji: '🎲', title: 'Truth or Dare', desc: 'Party fun, spin the wheel, 2–20 players' },
+  { id: 'sketch', emoji: '✏️', title: 'Sketch & Draw', desc: 'Draw it, guess it, 2–20 players' },
 ];
 
 export default function LandingPage() {
