@@ -2,6 +2,7 @@ services:
   - type: web
     name: uno-server
     runtime: node
+    plan: free
     rootDir: server
     buildCommand: npm install
     startCommand: npm start
