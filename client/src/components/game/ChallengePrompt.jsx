@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Modal from '../shared/Modal';
 import { useUiStore } from '../../store/uiStore';
-import socket from '../../socket';
+import realtime from '../../realtime';
 
 export default function ChallengePrompt() {
   const { showChallenge, challengeTimeoutAt, closeChallenge } = useUiStore();
@@ -23,7 +23,7 @@ export default function ChallengePrompt() {
   if (!showChallenge) return null;
 
   const challenge = () => {
-    socket.emit('game:challenge_draw4');
+    realtime.emit('game:challenge_draw4');
     closeChallenge();
   };
 

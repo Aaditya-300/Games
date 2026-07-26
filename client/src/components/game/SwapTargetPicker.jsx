@@ -1,18 +1,19 @@
 import Modal from '../shared/Modal';
 import { useUiStore } from '../../store/uiStore';
 import { useRoomStore } from '../../store/roomStore';
-import socket from '../../socket';
+import realtime from '../../realtime';
+import { getPlayerId } from '../../identity';
 
 export default function SwapTargetPicker() {
   const { showSwapTarget, closeSwapTarget } = useUiStore();
   const room = useRoomStore(s => s.room);
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
   if (!showSwapTarget || !room) return null;
 
   const others = room.players.filter(p => p.id !== myId);
 
   const pick = (targetId) => {
-    socket.emit('game:choose_swap_target', { targetId });
+    realtime.emit('game:choose_swap_target', { targetId });
     closeSwapTarget();
   };
 

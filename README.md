@@ -1,6 +1,6 @@
 # UNO Online
 
-Multiplayer party game hub. Node.js + Socket.io backend, React + Vite frontend.
+Multiplayer party game hub. Vercel serverless functions + Pusher Channels for realtime + Upstash Redis for state, React + Vite frontend.
 One lobby/room system powers four games:
 
 - 🃏 **UNO** — classic card game, 2–15 players, plus custom cards (Shield, Peek, Swap Hands, Draw Until Color, Discard Color, Sabotage)
@@ -10,162 +10,124 @@ One lobby/room system powers four games:
 
 All four support bots (fill empty seats, play automatically) and a shared chat sidebar per room.
 
+## Architecture
+
+This app runs entirely on Vercel — there is no persistent Node process. Every player action is a stateless HTTP call to a Vercel serverless function under `api/`; realtime updates are pushed to clients over **Pusher Channels**; room/game state lives in **Upstash Redis** (not in server memory) so it survives across function invocations; and countdown/window timers that must fire even if no client is watching (UNO's UNO-catch/challenge windows, IQ's question/reveal timers, Sketch & Draw's round timer) are scheduled via **Upstash QStash**.
+
+Player identity is a client-generated UUID persisted in `localStorage` (see `client/src/identity.js`), sent as an `X-Player-Id` header on every request and Pusher auth call — this replaces what used to be a Socket.io `socket.id`, and as a side effect makes rejoining a room after a page reload idempotent (same player ID → same seat) rather than needing a separate reconnect flow.
+
 ## Requirements
 
 - Node.js
-- Run `npm run install:all` from the repo root once to install all workspace dependencies.
+- [Vercel CLI](https://vercel.com/docs/cli) (`npm i -g vercel`) for local development against the serverless functions
+- Accounts + API keys for **Upstash** (Redis + QStash) and **Pusher** (Channels) — see [Environment variables](#environment-variables)
+- Run `npm run install:all` from the repo root once to install all workspace dependencies
 
 ## Development
 
-The server and client must be started in **separate terminals** — `npm run dev --workspaces` won't work here because the server's `node --watch` process never exits, blocking the client from starting in the same sequential run.
-
-**Terminal 1 — server** (Express + Socket.io on port 3001):
+**Terminal 1 — API + client, via Vercel's local emulator** (serves both `api/` and the built client on port 3000):
 
 ```bash
-cd server
-npm run dev
+vercel dev
 ```
 
-**Terminal 2 — client** (Vite + React on port 5173):
+**Terminal 2 — client dev server** (Vite + React on port 5173, hot-reloading, proxies `/api` to `vercel dev`):
 
 ```bash
 cd client
 npm run dev
 ```
 
-Then open [http://localhost:5173](http://localhost:5173) in your browser.
-
-Health check for the server: `curl http://localhost:3001/health` → `{"ok":true}`.
+Then open [http://localhost:5173](http://localhost:5173) in your browser. You'll need a `.env` file (see below) with your Upstash/Pusher credentials for either terminal to work — without them, room creation and realtime updates will fail.
 
 ## Project structure
 
 ```
 Games/
-├── package.json          # root workspace (npm workspaces: server, client)
-├── render.yaml            # Render deployment blueprint
-├── server/                # Express + Socket.io backend
-│   ├── package.json
-│   └── src/
-│       ├── index.js       # entrypoint — creates the HTTP/Socket.io server, registers handlers
-│       ├── config.js      # env-driven constants (PORT, timers, player caps, etc.)
-│       ├── roomManager.js # room/player CRUD, public view serializers, idle-room cleanup
-│       ├── chatManager.js # per-room chat history + system messages
-│       ├── reconnect.js   # reconnect-token lookup for socket-drop recovery
-│       ├── botManager.js  # UNO bot AI (turn scheduling, card choice, target picking)
-│       │
-│       ├── gameEngine.js  # UNO: core game state, playCard/drawCard/pass, win detection
-│       ├── cardEffects.js # UNO: applies card effects (skip, reverse, swap, sabotage, ...)
-│       ├── turnManager.js # UNO: turn order / direction advancement
-│       ├── deckBuilder.js # UNO: builds the shuffled deck (standard + custom cards)
-│       ├── validators.js  # UNO: legal-move checking
-│       │
-│       ├── tdCards.js     # Truth or Dare: truth/dare prompt text
-│       ├── skWords.js     # Sketch & Draw: word bank
-│       ├── iqQuestions.js # IQ Test: general-knowledge MCQ bank
-│       │
-│       ├── handlers/      # one file per Socket.io event namespace
-│       │   ├── roomHandlers.js  # room:create/join/leave/kick/add_bot/reconnect
-│       │   ├── chatHandlers.js  # chat:send
-│       │   ├── gameHandlers.js  # game:* — UNO play/draw/pass/color-pick/challenge/...
-│       │   ├── tdHandlers.js    # td:* — Truth or Dare spin/next_turn/end
-│       │   ├── skHandlers.js    # sk:* — Sketch & Draw word-pick/draw/guess/end
-│       │   └── iqHandlers.js    # iq:* — IQ Test start/answer/end
-│       └── utils/         # shuffle, room-code generation, bot-id helpers, timers
+├── package.json           # root workspace (npm workspaces: client)
+├── vercel.json             # build command + SPA rewrite for Vercel
+├── api/                     # Vercel serverless functions (the backend)
+│   ├── _lib/                # shared logic, imported by the functions below — not routable itself
+│   │   ├── config.js        # timing constants (turn duration, UNO/challenge windows, etc.)
+│   │   ├── redis.js         # Upstash Redis room store: get/save/lock, Map/Set (de)serialization
+│   │   ├── pusher.js         # Pusher server client + broadcastToRoom/sendToPlayer helpers
+│   │   ├── qstash.js         # schedules delayed callbacks to other /api endpoints
+│   │   ├── qstashReceiver.js  # verifies inbound QStash callback signatures
+│   │   ├── identity.js       # reads/validates the X-Player-Id header
+│   │   ├── cors.js           # CORS_ORIGINS-gated response headers
+│   │   ├── roomAccess.js     # loads a room and checks the caller is a member
+│   │   ├── roomManager.js    # room/player CRUD, public view serializers
+│   │   ├── chatManager.js    # per-room chat history + system messages
+│   │   ├── botManager.js     # UNO bot AI — resolved synchronously/inline, no setTimeout
+│   │   ├── gameFlow.js       # UNO turn advancement + QStash timer scheduling glue
+│   │   ├── gameEngine.js, cardEffects.js, turnManager.js, deckBuilder.js, validators.js  # UNO rules (pure functions, unchanged since the Socket.io version)
+│   │   ├── tdEngine.js, tdCards.js         # Truth or Dare
+│   │   ├── skEngine.js, skFlow.js, skWords.js  # Sketch & Draw (+ bot drawing/guessing)
+│   │   ├── iqEngine.js, iqQuestions.js     # IQ Test
+│   │   └── utils/            # shuffle, room-code generation, bot-id helpers
+│   ├── pusher/
+│   │   ├── auth.js           # authorizes presence-room-*/private-player-* channel subscriptions
+│   │   └── webhook.js        # presence member_added/removed → connection status
+│   ├── room/                 # create, join, spectate, leave, kick, add-bot, remove-bot
+│   ├── chat/                 # send
+│   ├── game/                 # UNO: start, play-card, draw-card, pass, call-uno, challenge-draw4,
+│   │                          #      choose-color/-swap-target/-sabotage-target/-discard-color,
+│   │                          #      turn-timeout, uno-timeout, challenge-timeout (QStash callbacks)
+│   ├── td/                   # start, spin, next-turn, end
+│   ├── sk/                   # start, pick-word, draw-stroke, clear-canvas, guess, end-turn,
+│   │                          #      next-round, end, tick (QStash round-timeout callback)
+│   └── iq/                   # start, answer, end, tick (QStash question/reveal callback)
 │
-└── client/                 # React + Vite frontend
+└── client/                   # React + Vite frontend
     ├── package.json
-    ├── vite.config.js      # dev server + /socket.io proxy to the backend
+    ├── vite.config.js        # dev server + /api proxy to `vercel dev`
     └── src/
         ├── main.jsx, App.jsx   # entry + route table (react-router-dom)
-        ├── socket.js            # shared Socket.io client instance
+        ├── identity.js          # generates/persists the player's UUID
+        ├── api.js               # fetch wrapper — attaches X-Player-Id, throws ApiError
+        ├── realtime.js          # drop-in replacement for the old socket.js: .emit maps to a
+        │                        #   REST call, .on subscribes to Pusher channels
         ├── hooks/
-        │   ├── useSocket.js     # registers all socket.on(...) listeners, drives navigation
+        │   ├── useSocket.js     # registers all realtime.on(...) listeners, drives navigation
         │   ├── useGame.js       # derived UNO game-state selectors
-        │   └── useTurnTimer.js
-        ├── store/               # zustand stores, one per concern
-        │   ├── roomStore.js     # room/players/myId (shared across all games)
-        │   ├── gameStore.js     # UNO game state + hand
-        │   ├── tdStore.js       # Truth or Dare state
-        │   ├── skStore.js       # Sketch & Draw state
-        │   ├── iqStore.js       # IQ Test state
-        │   ├── chatStore.js
-        │   └── uiStore.js       # modals/toasts
+        │   └── useTurnTimer.js  # client-side countdown; self-reports timeout via realtime.emit
+        ├── store/               # zustand stores, one per concern (unchanged — no socket coupling)
         ├── pages/               # one lobby + one game page per game type
-        │   ├── LandingPage.jsx  # create/join/spectate + game picker
-        │   ├── LobbyPage.jsx, GamePage.jsx, SpectatorPage.jsx       # UNO
-        │   ├── TDLobbyPage.jsx, TDGamePage.jsx                     # Truth or Dare
-        │   ├── SkLobbyPage.jsx, SkGamePage.jsx                     # Sketch & Draw
-        │   └── IqLobbyPage.jsx, IqGamePage.jsx                     # IQ Test
-        ├── components/
-        │   ├── lobby/   # PlayerList, RoomCode (shared across all lobbies)
-        │   ├── shared/  # Card, Modal, Toast, LeaveButton, Spinner
-        │   ├── chat/    # ChatSidebar, ChatMessage
-        │   ├── game/    # UNO board pieces (GameBoard, PlayerHand, pickers, WinScreen, ...)
-        │   ├── td/      # SpinWheel, TDCard, CardReveal
-        │   └── sk/      # DrawingCanvas, GuessList, WordChoicePicker, Scoreboard
-        └── styles/      # tokens.css (colors/spacing), global.css, card.css, animations.css
+        ├── components/          # lobby/, shared/, chat/, game/, td/, sk/
+        └── styles/
 ```
 
-**Adding a new game** follows the same shape each time: a `server/src/<x>Handlers.js` registered in `server/src/index.js`, a `client/src/store/<x>Store.js`, an `<X>LobbyPage.jsx` + `<X>GamePage.jsx` pair wired into `App.jsx`'s routes, socket listeners added to `useSocket.js`, and an entry in `LandingPage.jsx`'s `GAMES` list.
-
-## Production
-
-From the repo root:
-
-```bash
-npm start
-```
-
-This runs the server (`server/src/index.js`, no auto-reload) on port 3001.
-
-For the client, build static assets and preview them:
-
-```bash
-cd client
-npm run build
-npm run preview
-```
+**Adding a new game** follows the same shape each time: an `api/<x>/*.js` set of endpoints backed by an `api/_lib/<x>Engine.js`, a `client/src/store/<x>Store.js`, an `<X>LobbyPage.jsx` + `<X>GamePage.jsx` pair wired into `App.jsx`'s routes, realtime listeners added to `useSocket.js`, entries added to `client/src/realtime.js`'s `ROUTES` map, and an entry in `LandingPage.jsx`'s `GAMES` list.
 
 ## Environment variables
 
-| Variable          | Used by | Default                   | Purpose                                                  |
-|--------------------|---------|----------------------------|-----------------------------------------------------------|
-| `PORT`             | server  | `3001`                      | Port the Socket.io/Express server listens on             |
-| `CORS_ORIGINS`     | server  | `http://localhost:5173`     | Comma-separated list of origins allowed to connect        |
-| `VITE_SERVER_URL`  | client  | `http://localhost:3001`     | Base URL the client connects to for the Socket.io server |
+| Variable                        | Used by | Purpose                                                                 |
+|----------------------------------|---------|--------------------------------------------------------------------------|
+| `UPSTASH_REDIS_REST_URL`         | api     | Upstash Redis REST endpoint (room/game state store)                     |
+| `UPSTASH_REDIS_REST_TOKEN`       | api     | Upstash Redis REST auth token                                           |
+| `QSTASH_TOKEN`                   | api     | Upstash QStash token, used to schedule delayed timeout callbacks         |
+| `QSTASH_CURRENT_SIGNING_KEY`     | api     | Verifies inbound QStash callbacks are genuine                            |
+| `QSTASH_NEXT_SIGNING_KEY`        | api     | Same, covers key rotation                                                |
+| `PUSHER_APP_ID`                  | api     | Pusher Channels app ID                                                   |
+| `PUSHER_KEY`                     | api     | Pusher Channels key (server-side)                                        |
+| `PUSHER_SECRET`                  | api     | Pusher Channels secret                                                   |
+| `PUSHER_CLUSTER`                 | api     | Pusher Channels cluster (e.g. `us2`, `eu`)                                |
+| `CORS_ORIGINS`                   | api     | Comma-separated list of origins allowed to call the API cross-origin     |
+| `PUBLIC_BASE_URL`                | api     | Publicly reachable base URL QStash calls back to (falls back to `VERCEL_URL`) |
+| `VITE_PUSHER_KEY`                | client  | Pusher Channels key (public, safe to expose client-side)                 |
+| `VITE_PUSHER_CLUSTER`            | client  | Pusher Channels cluster                                                  |
+| `VITE_API_BASE_URL`              | client  | Base URL for API calls; leave unset for same-origin (client + API on one Vercel project) |
 
 ## Deploying online
 
-The client (static React build) and server (Socket.io backend) deploy to two different places, wired together by two GitHub Actions workflows in `.github/workflows/`:
-
-- **`deploy-pages.yml`** — builds `client/` and publishes it to **GitHub Pages** at `https://<user>.github.io/<repo>/`. Runs on every push to `main` that touches `client/**`.
-- **`deploy-server.yml`** — POSTs to a **Render** deploy hook to redeploy `uno-server`. Runs on every push to `main` that touches `server/**` or `render.yaml`.
-
-Both can also be triggered manually from the Actions tab (`workflow_dispatch`).
-
-### One-time setup
-
-1. **Render (server):**
-   - Push this repo to GitHub, then in the [Render dashboard](https://dashboard.render.com) choose **New > Blueprint** and point it at the repo. Render reads `render.yaml` and creates `uno-server` (Node web service, runs `npm start` from `server/`).
-   - Once created, go to `uno-server` → **Settings** → **Deploy Hook**, copy the URL.
-   - In the GitHub repo, add it as an Actions secret: **Settings > Secrets and variables > Actions > New repository secret**, name `RENDER_DEPLOY_HOOK_URL`.
-   - Note the service's public URL (e.g. `https://uno-server-xxxx.onrender.com`) — Render's auto-generated URLs include a random suffix that can't be known ahead of time.
-
-2. **GitHub Pages (client):**
-   - In the repo, go to **Settings > Pages** and set **Source** to **GitHub Actions**.
-   - Update `.github/workflows/deploy-pages.yml`'s `VITE_SERVER_URL` build env var to the actual Render server URL from step 1.
-   - Update `render.yaml`'s `CORS_ORIGINS` (and the `uno-server` env var on Render, or just redeploy the blueprint) to include the Pages URL, e.g. `https://<user>.github.io`.
-
-3. Push to `main` — both workflows run, and each deploys independently based on which paths changed. Share the Pages URL — anyone with the link can open it, create or join a room, and play.
-
-### Redeploying
-
-- Change something in `client/` → push → `deploy-pages.yml` rebuilds and republishes the static site.
-- Change something in `server/` → push → `deploy-server.yml` pings Render's deploy hook, which pulls latest and restarts `uno-server`.
-- Changing both in the same push runs both workflows in parallel — they're independent, so ordering doesn't matter.
+1. **Upstash** ([console.upstash.com](https://console.upstash.com)) — create a Redis database, copy its REST URL/token. Create a QStash instance under the same account, copy its token and signing keys.
+2. **Pusher** ([dashboard.pusher.com](https://dashboard.pusher.com)) — create a new Channels app, enable **Presence**, copy its app ID/key/secret/cluster.
+3. **Vercel** — import this repo as a new project. `vercel.json` already points the build at `client/` and rewrites non-`/api` routes to `index.html`. Add all the environment variables above in the project's Settings.
+4. After the first deploy, go back to the Pusher app's dashboard → **Webhooks**, and point it at `https://<your-vercel-domain>/api/pusher/webhook` (this URL only exists after the first deploy, so it's a two-step setup).
+5. Push to `main` — Vercel deploys automatically on every push (no custom GitHub Action needed).
 
 **Notes:**
-- Game/room state lives in server memory (see `server/src/roomManager.js`) — it resets on every server restart or redeploy, and only works with a single server instance (no horizontal scaling).
-- Render's free tier spins services down after inactivity; the first request after idling will be slow to wake up.
-- For a quick one-off playtest without deploying anywhere, you can instead tunnel your local server with a tool like `ngrok` and point `VITE_SERVER_URL` at the tunnel URL — ask if you'd like that walked through instead.
-- Alternative: `render.yaml` also defines a `uno-client` static-site service, so the client can be deployed on Render instead of Pages if preferred — just skip the Pages setup and use Render's Blueprint for both services.
+- Redis rooms auto-expire 30 minutes after their last write (`EXPIRE` on every save) — there's no cleanup cron job to run, the store handles it.
+- Every mutating endpoint takes a short-lived per-room Redis lock before reading/modifying/writing state, to prevent two concurrent requests (e.g. a bot's inline move racing a human's play) from clobbering each other.
+- UNO bot turns resolve **instantly** rather than after a "thinking" pause — there's no persistent process to hold that delay. If you want the pacing back, it would need to be a client-side delay applied after receiving an already-computed move.
+- Sketch & Draw's bot drawing is precomputed server-side as a full stroke-and-timing plan and shipped to clients in one payload; each client replays it locally with `setTimeout` since it's cosmetic only and doesn't affect scoring.

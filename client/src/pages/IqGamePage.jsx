@@ -3,7 +3,8 @@ import { useIqStore } from '../store/iqStore';
 import { useRoomStore } from '../store/roomStore';
 import ChatSidebar from '../components/chat/ChatSidebar';
 import Scoreboard from '../components/sk/Scoreboard';
-import socket from '../socket';
+import realtime from '../realtime';
+import { getPlayerId } from '../identity';
 
 const OPTION_COLORS = ['#e53935', '#1e88e5', '#43a047', '#ff6f00'];
 
@@ -32,7 +33,7 @@ export default function IqGamePage() {
   const reveal = useIqStore(s => s.reveal);
 
   const room = useRoomStore(s => s.room);
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
 
   const secondsLeft = useCountdown(phase === 'question' ? questionEndsAt : null);
 
@@ -42,10 +43,10 @@ export default function IqGamePage() {
 
   const handleAnswer = (optionIndex) => {
     if (myAnswer != null || phase !== 'question') return;
-    socket.emit('iq:answer', { optionIndex });
+    realtime.emit('iq:answer', { optionIndex });
   };
 
-  const handleEndGame = () => socket.emit('iq:end');
+  const handleEndGame = () => realtime.emit('iq:end');
 
   const showScoreboard = phase === 'game_over';
 

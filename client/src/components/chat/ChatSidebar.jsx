@@ -2,7 +2,8 @@ import { useRef, useEffect, useState } from 'react';
 import { useChatStore } from '../../store/chatStore';
 import { useRoomStore } from '../../store/roomStore';
 import ChatMessage from './ChatMessage';
-import socket from '../../socket';
+import realtime from '../../realtime';
+import { getPlayerId } from '../../identity';
 
 export default function ChatSidebar() {
   const messages = useChatStore(s => s.messages);
@@ -17,7 +18,7 @@ export default function ChatSidebar() {
   const send = (e) => {
     e.preventDefault();
     if (!text.trim()) return;
-    socket.emit('chat:send', { text: text.trim() });
+    realtime.emit('chat:send', { text: text.trim() });
     setText('');
   };
 
@@ -31,7 +32,7 @@ export default function ChatSidebar() {
         Chat
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px' }}>
-        {messages.map(m => <ChatMessage key={m.id} msg={m} myId={myId || socket.id} />)}
+        {messages.map(m => <ChatMessage key={m.id} msg={m} myId={myId || getPlayerId()} />)}
         <div ref={bottomRef} />
       </div>
       <form onSubmit={send} style={{ padding: '10px 14px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 6 }}>

@@ -1,9 +1,9 @@
 import { useRoomStore } from '../../store/roomStore';
-import socket from '../../socket';
+import { getPlayerId } from '../../identity';
 
 export default function PlayerList({ onKick, onRemoveBot }) {
   const room = useRoomStore(s => s.room);
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
 
   if (!room) return null;
 

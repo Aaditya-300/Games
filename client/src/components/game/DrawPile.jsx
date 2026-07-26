@@ -1,6 +1,5 @@
 import { CardBack } from '../shared/Card';
 import { useGame } from '../../hooks/useGame';
-import socket from '../../socket';
 
 export default function DrawPile({ onDraw }) {
   const { isMyTurn, phase, pendingDraw, gameState } = useGame();

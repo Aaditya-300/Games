@@ -5,12 +5,13 @@ import PlayerList from '../components/lobby/PlayerList';
 import RoomCode from '../components/lobby/RoomCode';
 import ChatSidebar from '../components/chat/ChatSidebar';
 import LeaveButton from '../components/shared/LeaveButton';
-import socket from '../socket';
+import realtime from '../realtime';
+import { getPlayerId } from '../identity';
 
 export default function SkLobbyPage() {
   const navigate = useNavigate();
   const room = useRoomStore(s => s.room);
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
 
   if (!room) return null;
 
@@ -18,13 +19,13 @@ export default function SkLobbyPage() {
   const playerCount = room.players.length;
   const canStart = amHost && playerCount >= 1;
 
-  const startGame = () => socket.emit('sk:start');
-  const kickPlayer = (id) => socket.emit('room:kick', { targetId: id });
-  const addBot = () => socket.emit('room:add_bot');
-  const removeBot = (id) => socket.emit('room:remove_bot', { botId: id });
+  const startGame = () => realtime.emit('sk:start');
+  const kickPlayer = (id) => realtime.emit('room:kick', { targetId: id });
+  const addBot = () => realtime.emit('room:add_bot');
+  const removeBot = (id) => realtime.emit('room:remove_bot', { botId: id });
 
   const leaveRoom = () => {
-    socket.emit('room:leave');
+    realtime.emit('room:leave');
     useRoomStore.getState().reset();
     useSkStore.getState().reset();
     navigate('/');

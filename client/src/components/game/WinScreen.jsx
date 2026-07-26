@@ -1,18 +1,19 @@
 import { useGameStore } from '../../store/gameStore';
 import { useRoomStore } from '../../store/roomStore';
-import socket from '../../socket';
+import realtime from '../../realtime';
+import { getPlayerId } from '../../identity';
 
 export default function WinScreen() {
   const { winner, rankings } = useGameStore();
   const room = useRoomStore(s => s.room);
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
 
   if (!winner) return null;
 
   const iWon = winner.winnerId === myId;
   const amHost = room?.hostId === myId;
 
-  const rematch = () => socket.emit('game:start');
+  const rematch = () => realtime.emit('game:start');
 
   return (
     <div style={{

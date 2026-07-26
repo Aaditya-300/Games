@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import socket from '../socket';
+import realtime from '../realtime';
 import '../styles/animations.css';
 
 const GAMES = [
@@ -22,11 +22,11 @@ export default function LandingPage() {
     if (!nickname.trim()) return;
 
     if (tab === 'create') {
-      socket.emit('room:create', { nickname: nickname.trim(), password: usePassword ? password : undefined, gameType });
+      realtime.emit('room:create', { nickname: nickname.trim(), password: usePassword ? password : undefined, gameType });
     } else if (tab === 'join') {
-      socket.emit('room:join', { nickname: nickname.trim(), roomCode: roomCode.trim().toUpperCase(), password: password || undefined });
+      realtime.emit('room:join', { nickname: nickname.trim(), roomCode: roomCode.trim().toUpperCase(), password: password || undefined });
     } else {
-      socket.emit('room:spectate', { nickname: nickname.trim(), roomCode: roomCode.trim().toUpperCase(), password: password || undefined });
+      realtime.emit('room:spectate', { nickname: nickname.trim(), roomCode: roomCode.trim().toUpperCase(), password: password || undefined });
     }
   };
 

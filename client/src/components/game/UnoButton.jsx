@@ -1,12 +1,13 @@
 import { useGame } from '../../hooks/useGame';
 import { useGameStore } from '../../store/gameStore';
 import { useRoomStore } from '../../store/roomStore';
-import socket from '../../socket';
+import realtime from '../../realtime';
+import { getPlayerId } from '../../identity';
 
 export default function UnoButton() {
   const { hand } = useGame();
   const gameState = useGameStore(s => s.gameState);
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
 
   const myCardCount = hand.length;
   const unoCalled = gameState?.unoCalled || [];
@@ -14,7 +15,7 @@ export default function UnoButton() {
   const iHaveCalled = unoCalled.includes(myId);
   const shouldPulse = myCardCount <= 2 && !iHaveCalled;
 
-  const callUno = () => socket.emit('game:call_uno', {});
+  const callUno = () => realtime.emit('game:call_uno', {});
 
   // Also allow catching others who haven't called
   const catchOthers = gameState?.activePlayers?.filter(id => {

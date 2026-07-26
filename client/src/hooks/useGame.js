@@ -1,6 +1,6 @@
 import { useGameStore } from '../store/gameStore';
 import { useRoomStore } from '../store/roomStore';
-import socket from '../socket';
+import { getPlayerId } from '../identity';
 
 const WILD_TYPES = new Set(['wild', 'wild_draw4', 'swap_hands', 'draw_until_color', 'discard_color', 'sabotage']);
 
@@ -8,7 +8,7 @@ export function useGame() {
   const { gameState, hand } = useGameStore();
   const { myId } = useRoomStore();
 
-  const isMyTurn = gameState?.currentPlayerId === (myId || socket.id);
+  const isMyTurn = gameState?.currentPlayerId === (myId || getPlayerId());
 
   const legalCards = hand.filter(card => {
     if (!gameState) return false;

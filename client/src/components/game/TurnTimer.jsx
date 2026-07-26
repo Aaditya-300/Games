@@ -1,12 +1,12 @@
 import { useTurnTimer } from '../../hooks/useTurnTimer';
 import { useGame } from '../../hooks/useGame';
 import { useRoomStore } from '../../store/roomStore';
-import socket from '../../socket';
+import { getPlayerId } from '../../identity';
 
 export default function TurnTimer() {
   const { pct, remaining } = useTurnTimer();
   const { gameState } = useGame();
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
 
   const isMyTurn = gameState?.currentPlayerId === myId;
   const color = pct > 40 ? '#4caf50' : pct > 20 ? '#ff9800' : '#f44336';

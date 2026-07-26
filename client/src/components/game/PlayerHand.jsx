@@ -1,6 +1,5 @@
 import Card from '../shared/Card';
 import { useGame } from '../../hooks/useGame';
-import socket from '../../socket';
 
 export default function PlayerHand({ onPlayCard }) {
   const { hand, legalCards, isMyTurn, phase } = useGame();

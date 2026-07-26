@@ -1,6 +1,6 @@
 import Modal from '../shared/Modal';
 import { useUiStore } from '../../store/uiStore';
-import socket from '../../socket';
+import realtime from '../../realtime';
 
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 const BG = {
@@ -13,7 +13,7 @@ export default function DiscardColorPicker() {
   if (!showDiscardColor) return null;
 
   const pick = (color) => {
-    socket.emit('game:choose_discard_color', { color });
+    realtime.emit('game:choose_discard_color', { color });
     closeDiscardColor();
   };
 

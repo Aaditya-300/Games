@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import socket from '../../socket';
+import realtime from '../../realtime';
 
 const COLORS = ['#ffffff', '#e53935', '#1e88e5', '#43a047', '#ff6f00', '#9c27b0', '#00acc1', '#000000'];
 const LINE_WIDTHS = [3, 6, 12];
@@ -106,7 +106,7 @@ export default function DrawingCanvas({ isDrawer, drawStrokes }) {
       lineWidth,
     };
     currentPoints.current = [];
-    socket.emit('sk:draw_stroke', { stroke });
+    realtime.emit('sk:draw_stroke', { stroke });
     // Add to local drawn count so we don't replay our own stroke
     drawnCount.current++;
   };
@@ -115,7 +115,7 @@ export default function DrawingCanvas({ isDrawer, drawStrokes }) {
     const ctx = getCtx();
     if (ctx) ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
     drawnCount.current = 0;
-    socket.emit('sk:clear_canvas');
+    realtime.emit('sk:clear_canvas');
   };
 
   return (

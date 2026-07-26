@@ -4,14 +4,15 @@ import { useRoomStore } from '../store/roomStore';
 import ChatSidebar from '../components/chat/ChatSidebar';
 import SpinWheel from '../components/td/SpinWheel';
 import CardReveal from '../components/td/CardReveal';
-import socket from '../socket';
+import realtime from '../realtime';
+import { getPlayerId } from '../identity';
 
 export default function TDGamePage() {
   const gameState = useTdStore(s => s.gameState);
   const spinResult = useTdStore(s => s.spinResult);
   const phase = useTdStore(s => s.phase);
   const room = useRoomStore(s => s.room);
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
 
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [showCard, setShowCard] = useState(false);
@@ -30,13 +31,13 @@ export default function TDGamePage() {
 
   const handleSpin = () => {
     if (!isMyTurn || phase !== 'spinning') return;
-    socket.emit('td:spin');
+    realtime.emit('td:spin');
   };
 
   const handleDone = () => {
     if (!isMyTurn || phase !== 'card_active') return;
     setShowCard(false);
-    socket.emit('td:next_turn');
+    realtime.emit('td:next_turn');
   };
 
   const handleWheelEnd = () => {
@@ -46,7 +47,7 @@ export default function TDGamePage() {
 
   const handleEndGame = () => {
     if (!amHost) return;
-    socket.emit('td:end');
+    realtime.emit('td:end');
   };
 
   if (!gameState || !room) {

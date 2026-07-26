@@ -2,16 +2,16 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  base: process.env.VITE_BASE_PATH || '/',
   plugins: [react()],
   server: {
     port: 5173,
     host: true,
     allowedHosts: true,
     proxy: {
-      '/socket.io': {
-        target: 'http://localhost:3001',
-        ws: true,
+      // Forwards to `vercel dev` (default port 3000) when developing
+      // against the serverless API locally.
+      '/api': {
+        target: 'http://localhost:3000',
       },
     },
   },

@@ -1,6 +1,7 @@
 import { useRoomStore } from '../../store/roomStore';
 import { useGame } from '../../hooks/useGame';
-import socket from '../../socket';
+import realtime from '../../realtime';
+import { getPlayerId } from '../../identity';
 import PlayerSeat from './PlayerSeat';
 import DrawPile from './DrawPile';
 import DiscardPile from './DiscardPile';
@@ -17,7 +18,7 @@ import WinScreen from './WinScreen';
 
 export default function GameBoard({ spectator = false }) {
   const room = useRoomStore(s => s.room);
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
   const { gameState, isMyTurn, phase } = useGame();
 
   if (!room || !gameState) return (
@@ -32,17 +33,17 @@ export default function GameBoard({ spectator = false }) {
 
   const handlePlayCard = (card) => {
     if (!isMyTurn || spectator) return;
-    socket.emit('game:play_card', { cardId: card.id });
+    realtime.emit('game:play_card', { cardId: card.id });
   };
 
   const handleDraw = () => {
     if (!isMyTurn || spectator) return;
-    socket.emit('game:draw_card');
+    realtime.emit('game:draw_card');
   };
 
   const handlePass = () => {
     if (!isMyTurn || spectator) return;
-    socket.emit('game:pass');
+    realtime.emit('game:pass');
   };
 
   return (

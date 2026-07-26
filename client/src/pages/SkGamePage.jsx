@@ -6,7 +6,8 @@ import DrawingCanvas from '../components/sk/DrawingCanvas';
 import WordChoicePicker from '../components/sk/WordChoicePicker';
 import GuessList from '../components/sk/GuessList';
 import Scoreboard from '../components/sk/Scoreboard';
-import socket from '../socket';
+import realtime from '../realtime';
+import { getPlayerId } from '../identity';
 
 function useTimer(roundEndsAt) {
   const [timeLeft, setTimeLeft] = useState(null);
@@ -44,7 +45,7 @@ export default function SkGamePage() {
   const turnResult = useSkStore(s => s.turnResult);
 
   const room = useRoomStore(s => s.room);
-  const myId = useRoomStore(s => s.myId) || socket.id;
+  const myId = useRoomStore(s => s.myId) || getPlayerId();
 
   const [guessText, setGuessText] = useState('');
   const timeLeft = useTimer(roundEndsAt);
@@ -57,18 +58,18 @@ export default function SkGamePage() {
   const alreadyGuessed = guesses.some(g => g.type === 'correct' && g.nickname === players.find(p => p.id === myId)?.nickname);
 
   const handlePickWord = (word) => {
-    socket.emit('sk:pick_word', { word });
+    realtime.emit('sk:pick_word', { word });
   };
 
   const handleGuess = (e) => {
     e.preventDefault();
     if (!guessText.trim() || alreadyGuessed) return;
-    socket.emit('sk:guess', { text: guessText.trim() });
+    realtime.emit('sk:guess', { text: guessText.trim() });
     setGuessText('');
   };
 
-  const handleNextRound = () => socket.emit('sk:next_round');
-  const handleEndGame = () => socket.emit('sk:end');
+  const handleNextRound = () => realtime.emit('sk:next_round');
+  const handleEndGame = () => realtime.emit('sk:end');
 
   const showScoreboard = phase === 'turn_end' || phase === 'round_end' || phase === 'game_over';
   const prevScores = turnResult?.prevScores ?? gameState?.prevScores;
@@ -84,7 +85,7 @@ export default function SkGamePage() {
     null;
 
   const handleScoreboardContinue = () => {
-    if (phase === 'game_over') socket.emit('sk:end');
+    if (phase === 'game_over') realtime.emit('sk:end');
     else if (phase === 'round_end') handleNextRound();
   };
 
@@ -174,7 +175,7 @@ export default function SkGamePage() {
               <div style={{ textAlign: 'center', marginTop: 10 }}>
                 <button
                   className="btn"
-                  onClick={() => socket.emit('sk:end_turn')}
+                  onClick={() => realtime.emit('sk:end_turn')}
                   style={{
                     padding: '8px 20px', fontSize: '0.85rem',
                     background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
