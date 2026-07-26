@@ -18,7 +18,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_SERVER_URL
-        value: https://uno-server.onrender.com
+        value: https://uno-server-gabz.onrender.com
     routes:
       - type: rewrite
         source: /*

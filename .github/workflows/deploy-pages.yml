@@ -33,7 +33,7 @@ jobs:
         working-directory: client
         env:
           VITE_BASE_PATH: /Games/
-          VITE_SERVER_URL: https://uno-server.onrender.com
+          VITE_SERVER_URL: https://uno-server-gabz.onrender.com
         run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
