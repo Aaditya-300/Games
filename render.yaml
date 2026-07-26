@@ -7,7 +7,7 @@ services:
     startCommand: npm start
     envVars:
       - key: CORS_ORIGINS
-        value: https://uno-client.onrender.com
+        value: https://uno-client.onrender.com,https://aaditya-300.github.io
 
   - type: web
     name: uno-client

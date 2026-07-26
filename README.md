@@ -134,19 +134,38 @@ npm run preview
 | `CORS_ORIGINS`     | server  | `http://localhost:5173`     | Comma-separated list of origins allowed to connect        |
 | `VITE_SERVER_URL`  | client  | `http://localhost:3001`     | Base URL the client connects to for the Socket.io server |
 
-## Deploying online (Render)
+## Deploying online
 
-This repo includes a `render.yaml` blueprint that deploys the server and client as two separate Render services — a Node web service for the Socket.io backend, and a static site for the React frontend.
+The client (static React build) and server (Socket.io backend) deploy to two different places, wired together by two GitHub Actions workflows in `.github/workflows/`:
 
-1. Push this repo to GitHub (or GitLab/Bitbucket).
-2. In the [Render dashboard](https://dashboard.render.com), choose **New > Blueprint** and point it at the repo. Render reads `render.yaml` and creates both services:
-   - `uno-server` — Node web service, runs `npm start` from `server/`
-   - `uno-client` — static site, runs `npm run build` from `client/`, publishes `client/dist`
-3. After the first deploy, note each service's public URL (e.g. `https://uno-server-xxxx.onrender.com` and `https://uno-client-xxxx.onrender.com`).
-4. Update `render.yaml`'s `CORS_ORIGINS` (server) and `VITE_SERVER_URL` (client) env vars to match those actual URLs, then redeploy — Render's auto-generated URLs include a random suffix that can't be known ahead of time.
-5. Share the client's URL — anyone with the link can open it in a browser, create or join a room, and play.
+- **`deploy-pages.yml`** — builds `client/` and publishes it to **GitHub Pages** at `https://<user>.github.io/<repo>/`. Runs on every push to `main` that touches `client/**`.
+- **`deploy-server.yml`** — POSTs to a **Render** deploy hook to redeploy `uno-server`. Runs on every push to `main` that touches `server/**` or `render.yaml`.
+
+Both can also be triggered manually from the Actions tab (`workflow_dispatch`).
+
+### One-time setup
+
+1. **Render (server):**
+   - Push this repo to GitHub, then in the [Render dashboard](https://dashboard.render.com) choose **New > Blueprint** and point it at the repo. Render reads `render.yaml` and creates `uno-server` (Node web service, runs `npm start` from `server/`).
+   - Once created, go to `uno-server` → **Settings** → **Deploy Hook**, copy the URL.
+   - In the GitHub repo, add it as an Actions secret: **Settings > Secrets and variables > Actions > New repository secret**, name `RENDER_DEPLOY_HOOK_URL`.
+   - Note the service's public URL (e.g. `https://uno-server-xxxx.onrender.com`) — Render's auto-generated URLs include a random suffix that can't be known ahead of time.
+
+2. **GitHub Pages (client):**
+   - In the repo, go to **Settings > Pages** and set **Source** to **GitHub Actions**.
+   - Update `.github/workflows/deploy-pages.yml`'s `VITE_SERVER_URL` build env var to the actual Render server URL from step 1.
+   - Update `render.yaml`'s `CORS_ORIGINS` (and the `uno-server` env var on Render, or just redeploy the blueprint) to include the Pages URL, e.g. `https://<user>.github.io`.
+
+3. Push to `main` — both workflows run, and each deploys independently based on which paths changed. Share the Pages URL — anyone with the link can open it, create or join a room, and play.
+
+### Redeploying
+
+- Change something in `client/` → push → `deploy-pages.yml` rebuilds and republishes the static site.
+- Change something in `server/` → push → `deploy-server.yml` pings Render's deploy hook, which pulls latest and restarts `uno-server`.
+- Changing both in the same push runs both workflows in parallel — they're independent, so ordering doesn't matter.
 
 **Notes:**
 - Game/room state lives in server memory (see `server/src/roomManager.js`) — it resets on every server restart or redeploy, and only works with a single server instance (no horizontal scaling).
 - Render's free tier spins services down after inactivity; the first request after idling will be slow to wake up.
 - For a quick one-off playtest without deploying anywhere, you can instead tunnel your local server with a tool like `ngrok` and point `VITE_SERVER_URL` at the tunnel URL — ask if you'd like that walked through instead.
+- Alternative: `render.yaml` also defines a `uno-client` static-site service, so the client can be deployed on Render instead of Pages if preferred — just skip the Pages setup and use Render's Blueprint for both services.
